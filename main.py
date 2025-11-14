@@ -11,7 +11,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 
 # Initialize OpenAI client
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def get_embedding(text, model="text-embedding-3-small"):
     """
