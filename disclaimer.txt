@@ -1,0 +1,16 @@
+⚠️ FACTS-ONLY. NO INVESTMENT ADVICE.
+
+This assistant provides factual information about mutual fund schemes from official sources (AMC websites, SEBI, and AMFI). 
+
+It does NOT provide:
+- Investment advice
+- Recommendations about which schemes to buy or sell
+- Opinions about scheme performance
+- Portfolio allocation suggestions
+- Comparisons of returns or performance
+
+Always consult with a qualified financial advisor before making investment decisions.
+
+For educational resources about mutual funds, visit:
+https://www.amfiindia.com/investor-corner/knowledge-center
+
