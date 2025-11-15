@@ -3,15 +3,19 @@ import os
 import time
 from openai import OpenAI
 from pinecone import Pinecone, ServerlessSpec
+import streamlit as st
 
-load_dotenv()  # Load environment variables from .env
+# load_dotenv()  # Load environment variables from .env
 
-# Load keys
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+# # Load keys
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+
+OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
 
 # Initialize OpenAI client
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 def get_embedding(text, model="text-embedding-3-small"):
     """
