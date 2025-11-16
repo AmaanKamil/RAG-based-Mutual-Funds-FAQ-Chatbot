@@ -81,7 +81,9 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
             'citation': None,
             'timestamp': datetime.now().strftime("%Y-%m-%d")
         }
-        
+    # Initialize citations set
+    citations = set()
+
     # Enhanced query understanding
     query_lower = query.lower()
     is_exit_load = any(term in query_lower for term in ['exit load', 'exitload', 'withdrawal', 'redemption'])
