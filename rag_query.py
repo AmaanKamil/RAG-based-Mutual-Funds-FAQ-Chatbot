@@ -113,14 +113,15 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
         relevance_score = 0
         
         # Score relevance based on query type
+        # In rag_query.py, update the relevance scoring section
         if is_exit_load and ('exit load' in chunk_text or 'exitload' in chunk_text.replace(' ', '')):
-            relevance_score += 2
+            relevance_score += 3  # Increased weight for exit load
             is_relevant = True
         if is_expense_ratio and ('expense ratio' in chunk_text or 'ter' in chunk_text):
-            relevance_score += 2
+            relevance_score += 3  # Increased weight for expense ratio
             is_relevant = True
         if is_sip and ('sip' in chunk_text or 'systematic investment plan' in chunk_text or 'minimum investment' in chunk_text):
-            relevance_score += 2
+            relevance_score += 3  # Increased weight for SIP
             is_relevant = True
         if is_nav and ('nav' in chunk_text or 'net asset value' in chunk_text):
             relevance_score += 2
@@ -143,14 +144,16 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
     # Combine chunks with relevant ones first
     retrieved_chunks = relevant_chunks + other_chunks
     
-    # Get the most relevant chunks (up to 5 for comparison queries)
-    max_chunks = 5 if is_comparison else 3
+    # In rag_query.py, update the context building part
+    # Get more chunks for multi-faceted queries
+    is_multi_faceted = (is_exit_load + is_expense_ratio + is_sip + is_nav + is_aum) > 1
+    max_chunks = 8 if is_multi_faceted else 5
     top_chunks = retrieved_chunks[:max_chunks]
-    
-    # Build context from top chunks
+
+    # Build context from top chunks, removing duplicates
     context_parts = []
-    citations = set()
-    
+    seen_texts = set()
+
     for chunk in top_chunks:
         if hasattr(chunk, 'metadata'):
             metadata = chunk.metadata
@@ -160,16 +163,30 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
         text = metadata.get('text', '')
         url = metadata.get('url', '')
         
-        if text:
+        # Only add unique text to avoid redundancy
+        if text and text not in seen_texts:
+            seen_texts.add(text)
             context_parts.append(text)
         if url:
             citations.add(url)
-    
+
     context = "\n\n".join(context_parts)
     citation = next(iter(citations), None)  # Get the first citation if available
     
     # Build a more specific prompt based on the query type
-    if is_comparison:
+    # Update the system prompt for multi-faceted queries
+    if is_exit_load + is_expense_ratio + is_sip > 1:  # Multiple information types requested
+        system_prompt = """You are an expert mutual fund assistant providing multiple pieces of information.
+        Your role is to provide clear, factual answers to all parts of the query based on the provided context.
+
+        Rules for responses:
+        1. Address each part of the query separately
+        2. Be specific about the values (e.g., percentages, amounts)
+        3. If information for any part is missing, clearly state what's missing
+        4. Keep the response well-structured and easy to read
+        5. Always cite the source URL for the information
+        """
+    elif is_comparison:
         system_prompt = """You are an expert mutual fund assistant specializing in comparing different mutual fund schemes. 
         Your role is to provide clear, factual comparisons based on the provided context.
 
@@ -224,8 +241,22 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
         5. Never provide investment advice, recommendations, or comparisons of returns
         6. Focus on factual information like expense ratios, exit loads, minimum SIP amounts, etc."""
 
-    user_prompt = f"""Context from source documents:
+    if is_multi_faceted:
+        user_prompt = f"""Context from source documents:
 {context}
+
+Question: {query}
+
+Please provide a complete response addressing all parts of the question. For each piece of information requested:
+1. State the specific value
+2. Include the unit (%, INR, etc.) where applicable
+3. If any information is not available in the context, clearly state what's missing
+
+Format your response clearly with separate sections for each piece of information."""
+    else:
+        user_prompt = f"""Context from source documents:
+{context}
+
 
 Question: {query}
 

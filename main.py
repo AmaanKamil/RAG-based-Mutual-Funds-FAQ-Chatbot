@@ -126,19 +126,35 @@ def query_pinecone(query_text, top_k=5):
         specific_terms = ['exit load', 'expense ratio', 'minimum sip', 'sip amount', 'nav', 'aum', 'returns']
         has_specific_term = any(term in query_lower for term in specific_terms)
         
-        if has_specific_term or is_comparison:
-            # For specific financial queries or comparisons, increase top_k to get more results
+        # Check for multi-faceted queries (asking for multiple pieces of information)
+        is_multi_faceted = sum(1 for term in specific_terms if term in query_lower) > 1
+        
+        if has_specific_term or is_comparison or is_multi_faceted:
+            # For specific financial queries, comparisons, or multi-faceted queries, increase top_k
             results = index.query(
                 vector=query_embedding,
-                top_k=top_k * 3,  # Get more results for better filtering
+                top_k=top_k * 4,  # Get more results for better filtering
                 include_metadata=True
             )
             
-            # For comparison queries, prioritize documents with multiple schemes
-            if is_comparison:
-                # Sort matches to prioritize documents that mention multiple schemes
+            # For multi-faceted queries, we want to ensure we get all relevant information
+            if is_multi_faceted:
+                # Sort matches to prioritize chunks that contain multiple relevant terms
                 results.matches.sort(
-                    key=lambda x: sum(1 for term in specific_terms if term in x.metadata.get('text', '').lower()),
+                    key=lambda x: sum(
+                        1 for term in specific_terms 
+                        if term in x.metadata.get('text', '').lower()
+                    ),
+                    reverse=True
+                )
+            # For comparison queries, prioritize documents that mention multiple schemes
+            elif is_comparison:
+                schemes = ['Groww Value Fund', 'Groww Large Cap Fund', 'Groww Aggressive Hybrid Fund', 'Groww Liquid Fund']
+                results.matches.sort(
+                    key=lambda x: sum(
+                        1 for scheme in schemes 
+                        if scheme.lower() in x.metadata.get('text', '').lower()
+                    ),
                     reverse=True
                 )
         else:
@@ -149,12 +165,13 @@ def query_pinecone(query_text, top_k=5):
                 include_metadata=True
             )
         
-        # Filter out low-scoring results, but be more lenient for comparisons
-        min_score = 0.5 if is_comparison else 0.6
+        # Filter out low-scoring results, but be more lenient for comparisons or multi-faceted queries
+        min_score = 0.5 if (is_comparison or is_multi_faceted) else 0.6
         filtered_matches = [match for match in results.matches if match.score >= min_score]
         
-        # If we have filtered too many results, take the top ones
-        return filtered_matches[:top_k * 2]  # Return more results for better context
+        # Return more results for better context, especially for complex queries
+        max_results = top_k * 3 if (is_comparison or is_multi_faceted) else top_k * 2
+        return filtered_matches[:max_results]
         
     except Exception as e:
         print(f"Error querying Pinecone: {e}")
