@@ -4,79 +4,35 @@ This document contains sample queries and the assistant's responses with citatio
 
 ## Factual Questions (Accepted)
 
-### Q1: What is the expense ratio of Groww Value Fund?
+Q1: What is the minimum SIP amount for Groww Value Fund Direct Growth?
+A1: The minimum SIP amount for Groww Value Fund Direct Growth is ₹500 per month. Source: https://groww.in/mutual-funds/groww-value-fund-direct-growth. Last updated from sources: Nov 2025.
 
-**Assistant Response:**
-The expense ratio for Groww Value Fund (Direct Growth) can be found in the scheme's factsheet. Expense ratios typically range from 0.5% to 2.5% for direct plans of equity funds. Please refer to the latest factsheet for the exact current expense ratio.
+Q2: What is the exit load for Groww Value Fund Direct Growth?
+A2: Groww Value Fund Direct Growth charges an exit load of 1% if units are redeemed within 1 year from the date of allotment. Source: https://groww.in/mutual-funds/groww-value-fund-direct-growth. Last updated from sources: Nov 2025.
 
-**Source:** https://groww.in/mutual-funds/groww-value-fund-direct-growth  
-**Last updated from sources:** 2024-01-XX
+Q3: What is the expense ratio for Groww Value Fund Direct Growth?
+A3: The expense ratio for Groww Value Fund Direct Growth is 0.90%. Source: https://groww.in/mutual-funds/groww-value-fund-direct-growth. Last updated from sources: Nov 2025.
 
----
+Q4: What is the riskometer rating for Groww Value Fund Direct Growth?
+A4: The riskometer for Groww Value Fund Direct Growth indicates a "Very High" risk level. Source: https://groww.in/mutual-funds/groww-value-fund-direct-growth. Last updated from sources: Nov 2025.
 
-### Q2: What is the minimum SIP amount for Groww Large Cap Fund?
+Q5: What is the benchmark index for Groww Value Fund Direct Growth?
+A5: Groww Value Fund Direct Growth's benchmark is the Nifty 500 Value 50 Total Return Index. Source: https://groww.in/mutual-funds/groww-value-fund-direct-growth. Last updated from sources: Nov 2025.
 
-**Assistant Response:**
-The minimum SIP (Systematic Investment Plan) amount for Groww Large Cap Fund is typically ₹500 per month, which is the standard minimum for most mutual fund schemes. Some schemes may allow lower amounts, but ₹500 is the most common minimum SIP investment.
+Q6: What is the minimum first investment allowed in Groww Value Fund Direct Growth?
+A6: The minimum amount for the first investment in Groww Value Fund Direct Growth is ₹500. Source: https://groww.in/mutual-funds/groww-value-fund-direct-growth. Last updated from sources: Nov 2025.
 
-**Source:** https://groww.in/mutual-funds/groww-large-cap-fund-direct-growth  
-**Last updated from sources:** 2024-01-XX
+Q7: Where can I view the latest holdings for Groww Value Fund Direct Growth?
+A7: You can view the latest holdings for Groww Value Fund Direct Growth on its official Groww scheme webpage, which lists sector allocation and top stock holdings. Source: https://groww.in/mutual-funds/groww-value-fund-direct-growth. Last updated from sources: Nov 2025.
 
----
-
-### Q3: What is the exit load for Groww Aggressive Hybrid Fund?
-
-**Assistant Response:**
-Exit load details for Groww Aggressive Hybrid Fund vary based on the holding period. Typically, hybrid funds may have an exit load of 1% if redeemed within 1 year of investment. For exact exit load structure, please refer to the scheme's Key Information Memorandum (KIM) or factsheet.
-
-**Source:** https://groww.in/mutual-funds/groww-aggressive-hybrid-fund-direct-growth  
-**Last updated from sources:** 2024-01-XX
-
----
-
-### Q4: What is the lock-in period for ELSS schemes?
-
-**Assistant Response:**
-ELSS (Equity Linked Savings Scheme) mutual funds have a mandatory lock-in period of 3 years from the date of investment. This lock-in period is mandated by the Income Tax Act and applies to all ELSS schemes regardless of the fund house.
-
-**Source:** https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doGetFundDetails=yes&type=2&mfId=29  
-**Last updated from sources:** 2024-01-XX
-
----
-
-### Q5: What is the riskometer rating for Groww Liquid Fund?
-
-**Assistant Response:**
-Groww Liquid Fund is classified as a low-risk fund with a riskometer rating typically showing "Low to Moderate" risk. Liquid funds invest primarily in money market instruments and are considered among the safest categories of mutual funds, suitable for short-term investments.
-
-**Source:** https://groww.in/mutual-funds/groww-liquid-fund-direct-growth  
-**Last updated from sources:** 2024-01-XX
-
----
-
-### Q6: How to download capital gains statement from Groww?
-
-**Assistant Response:**
-To download capital gains statements from Groww, log into your Groww account, navigate to the "Statements" or "Tax Documents" section, and select "Capital Gains Statement". You can download statements for specific financial years. The statements are typically available in PDF format and can be downloaded directly from the platform.
-
-**Source:** https://groww.in/mutual-funds/groww-value-fund-direct-growth  
-**Last updated from sources:** 2024-01-XX
-
----
-
-### Q7: What is the benchmark for Groww Large Cap Fund?
-
-**Assistant Response:**
-Groww Large Cap Fund typically uses the Nifty 100 or Nifty 50 index as its benchmark, as these indices represent large-cap stocks in the Indian equity market. The exact benchmark is specified in the scheme's factsheet and Scheme Information Document (SID).
-
-**Source:** https://groww.in/mutual-funds/groww-large-cap-fund-direct-growth  
-**Last updated from sources:** 2024-01-XX
+Q8: How do I download a capital gains statement for this scheme?
+A8: You can download your capital gains statement by logging in to your Groww account, navigating to 'Tax Documents', and selecting the appropriate scheme. Source: https://groww.in/mutual-funds/groww-value-fund-direct-growth. Last updated from sources: Nov 2025.
 
 ---
 
 ## Investment Advice Questions (Refused)
 
-### Q8: Should I invest in Groww Value Fund?
+### Q9: Should I invest in Groww Value Fund?
 
 **Assistant Response:**
 I can only provide factual information about mutual fund schemes, not investment advice. For educational resources about mutual funds, please visit: https://www.amfiindia.com/investor-corner/knowledge-center
@@ -87,7 +43,7 @@ I can only provide factual information about mutual fund schemes, not investment
 
 ---
 
-### Q9: Which is better - Groww Large Cap Fund or Groww Value Fund?
+### Q10: Which is better - Groww Large Cap Fund or Groww Value Fund?
 
 **Assistant Response:**
 I can only provide factual information about mutual fund schemes, not investment advice. For educational resources about mutual funds, please visit: https://www.amfiindia.com/investor-corner/knowledge-center
@@ -98,7 +54,7 @@ I can only provide factual information about mutual fund schemes, not investment
 
 ---
 
-### Q10: What is the return of Groww Aggressive Hybrid Fund?
+### Q11: What is the return of Groww Aggressive Hybrid Fund?
 
 **Assistant Response:**
 I can only provide factual information about mutual fund schemes, not investment advice. For educational resources about mutual funds, please visit: https://www.amfiindia.com/investor-corner/knowledge-center

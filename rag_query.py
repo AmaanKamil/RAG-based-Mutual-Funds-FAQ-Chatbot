@@ -46,7 +46,22 @@ def is_investment_advice_query(query):
     Check if the query is asking for investment advice.
     """
     query_lower = query.lower()
-    return any(keyword in query_lower for keyword in ADVICE_KEYWORDS)
+    
+    # Check for comparison queries that are not just asking for facts
+    if any(term in query_lower for term in ['which is better', 'should i choose', 'which one should i pick']):
+        return True
+        
+    # Check for other investment advice patterns
+    advice_phrases = [
+        'should i', 'should i buy', 'should i sell', 'should i invest',
+        'is it good', 'is it bad', 'is it worth', 'worth investing',
+        'recommend', 'recommendation', 'advice', 'suggest',
+        'best', 'worst', 'better', 'compare returns',
+        'portfolio', 'allocation', 'how much to invest',
+        'which would you recommend', 'which would you choose'
+    ]
+    
+    return any(phrase in query_lower for phrase in advice_phrases)
 
 def format_citation(url):
     """
@@ -74,6 +89,14 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
     is_sip = any(term in query_lower for term in ['sip', 'systematic investment plan', 'minimum investment'])
     is_nav = any(term in query_lower for term in ['nav', 'net asset value'])
     is_aum = any(term in query_lower for term in ['aum', 'assets under management'])
+    is_comparison = any(term in query_lower for term in ['compare', 'which has', 'which one has', 'difference between', 'vs', 'versus'])
+    
+    # Extract scheme names for comparison
+    scheme_names = []
+    if is_comparison:
+        # Look for common mutual fund scheme names in the query
+        schemes = ['Groww Value Fund', 'Groww Large Cap Fund', 'Groww Aggressive Hybrid Fund', 'Groww Liquid Fund']
+        scheme_names = [scheme for scheme in schemes if scheme.lower() in query_lower]
     
     # Reorder chunks based on relevance to the query
     relevant_chunks = []
@@ -87,41 +110,77 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
         
         chunk_text = metadata.get('text', '').lower()
         is_relevant = False
+        relevance_score = 0
         
+        # Score relevance based on query type
         if is_exit_load and ('exit load' in chunk_text or 'exitload' in chunk_text.replace(' ', '')):
+            relevance_score += 2
             is_relevant = True
-        elif is_expense_ratio and ('expense ratio' in chunk_text or 'ter' in chunk_text):
+        if is_expense_ratio and ('expense ratio' in chunk_text or 'ter' in chunk_text):
+            relevance_score += 2
             is_relevant = True
-        elif is_sip and ('sip' in chunk_text or 'systematic investment plan' in chunk_text or 'minimum investment' in chunk_text):
+        if is_sip and ('sip' in chunk_text or 'systematic investment plan' in chunk_text or 'minimum investment' in chunk_text):
+            relevance_score += 2
             is_relevant = True
-        elif is_nav and ('nav' in chunk_text or 'net asset value' in chunk_text):
+        if is_nav and ('nav' in chunk_text or 'net asset value' in chunk_text):
+            relevance_score += 2
             is_relevant = True
-        elif is_aum and ('aum' in chunk_text or 'assets under management' in chunk_text):
+        if is_aum and ('aum' in chunk_text or 'assets under management' in chunk_text):
+            relevance_score += 2
             is_relevant = True
+        if is_comparison and any(scheme.lower() in chunk_text for scheme in scheme_names):
+            relevance_score += 3  # Higher weight for scheme-specific info in comparisons
             
         if is_relevant:
+            chunk.relevance_score = relevance_score
             relevant_chunks.append(chunk)
         else:
             other_chunks.append(chunk)
     
+    # Sort relevant chunks by relevance score (highest first)
+    relevant_chunks.sort(key=lambda x: getattr(x, 'relevance_score', 0), reverse=True)
+    
     # Combine chunks with relevant ones first
     retrieved_chunks = relevant_chunks + other_chunks
     
-    # Get the most relevant chunk
-    top_chunk = retrieved_chunks[0]
-    if hasattr(top_chunk, 'metadata'):
-        metadata = top_chunk.metadata
-    else:
-        metadata = top_chunk.get('metadata', {})
+    # Get the most relevant chunks (up to 5 for comparison queries)
+    max_chunks = 5 if is_comparison else 3
+    top_chunks = retrieved_chunks[:max_chunks]
     
-    context = metadata.get('text', '')
-    citation_url = metadata.get('url', '')
+    # Build context from top chunks
+    context_parts = []
+    citations = set()
     
-    if not context:
-        context = "Relevant information from source documents."
+    for chunk in top_chunks:
+        if hasattr(chunk, 'metadata'):
+            metadata = chunk.metadata
+        else:
+            metadata = chunk.get('metadata', {})
+        
+        text = metadata.get('text', '')
+        url = metadata.get('url', '')
+        
+        if text:
+            context_parts.append(text)
+        if url:
+            citations.add(url)
+    
+    context = "\n\n".join(context_parts)
+    citation = next(iter(citations), None)  # Get the first citation if available
     
     # Build a more specific prompt based on the query type
-    if is_exit_load:
+    if is_comparison:
+        system_prompt = """You are an expert mutual fund assistant specializing in comparing different mutual fund schemes. 
+        Your role is to provide clear, factual comparisons based on the provided context.
+
+        Rules for comparison responses:
+        1. List each scheme and its relevant details in a clear, structured format
+        2. Be specific about the values being compared (expense ratios, exit loads, etc.)
+        3. If the context contains information for some schemes but not others, clearly state what information is missing
+        4. Keep the response concise but comprehensive
+        5. Always cite the source URL for the information
+        """
+    elif is_exit_load:
         system_prompt = """You are an expert mutual fund assistant specializing in exit load information. 
         Your role is to provide clear, accurate information about exit loads based on the provided context.
 
@@ -157,31 +216,20 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
     else:
         system_prompt = """You are a facts-only assistant for mutual fund information. Your role is to provide concise, factual answers based ONLY on the provided context. 
 
-Rules:
-1. Answer in maximum 3 sentences
-2. Only state facts from the context - no opinions, no advice
-3. Be precise and clear
-4. If the context doesn't contain the answer, say so clearly
-5. Never provide investment advice, recommendations, or comparisons of returns
-6. Focus on factual information like expense ratios, exit loads, minimum SIP amounts, etc."""
+        Rules:
+        1. Answer in maximum 3 sentences
+        2. Only state facts from the context - no opinions, no advice
+        3. Be precise and clear
+        4. If the context doesn't contain the answer, say so clearly
+        5. Never provide investment advice, recommendations, or comparisons of returns
+        6. Focus on factual information like expense ratios, exit loads, minimum SIP amounts, etc."""
 
-    # Combine context from multiple chunks
-    combined_context = context[:3000]  # First chunk
-    for chunk in retrieved_chunks[1:3]:  # Add up to 2 more chunks
-        if hasattr(chunk, 'metadata'):
-            chunk_metadata = chunk.metadata
-        else:
-            chunk_metadata = chunk.get('metadata', {})
-        chunk_text = chunk_metadata.get('text', '')
-        if chunk_text:
-            combined_context += "\n\n" + chunk_text[:1000]  # Add first 1000 chars of each additional chunk
-
-    user_prompt = f"""Context from source document:
-{combined_context}
+    user_prompt = f"""Context from source documents:
+{context}
 
 Question: {query}
 
-Provide a factual answer in maximum 3 sentences based ONLY on the context above. If the context doesn't contain the answer, say that you couldn't find this information in the source documents."""
+Provide a factual answer based ONLY on the context above. If the context doesn't contain the answer, say that you couldn't find this information in the source documents."""
 
     try:
         response = client.chat.completions.create(
@@ -191,7 +239,7 @@ Provide a factual answer in maximum 3 sentences based ONLY on the context above.
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.1,
-            max_tokens=150
+            max_tokens=300 if is_comparison else 150  # Allow more tokens for comparison responses
         )
         
         # Check if we got a valid response
@@ -202,7 +250,7 @@ Provide a factual answer in maximum 3 sentences based ONLY on the context above.
         
         return {
             'answer': answer,
-            'citation': citation_url if citation_url else None,
+            'citation': citation,
             'timestamp': datetime.now().strftime("%Y-%m-%d")
         }
     except (APIError, AuthenticationError, RateLimitError, APITimeoutError) as e:
@@ -219,6 +267,7 @@ Provide a factual answer in maximum 3 sentences based ONLY on the context above.
             'citation': None,
             'timestamp': datetime.now().strftime("%Y-%m-%d")
         }
+   
 
 def query_rag(user_query, top_k=5, model=model):
     """

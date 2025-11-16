@@ -116,25 +116,30 @@ def query_pinecone(query_text, top_k=5):
         return []
     
     try:
-        # First, try to find exact matches for specific terms
+        # Enhanced query understanding
+        query_lower = query_text.lower()
+        
+        # Check if this is a comparison query
+        is_comparison = any(term in query_lower for term in ['compare', 'which has', 'which one has', 'difference between', 'vs', 'versus'])
+        
+        # Specific terms that need special handling
         specific_terms = ['exit load', 'expense ratio', 'minimum sip', 'sip amount', 'nav', 'aum', 'returns']
-        if any(term in query_text.lower() for term in specific_terms):
-            # For specific financial queries, increase top_k to get more results
+        has_specific_term = any(term in query_lower for term in specific_terms)
+        
+        if has_specific_term or is_comparison:
+            # For specific financial queries or comparisons, increase top_k to get more results
             results = index.query(
                 vector=query_embedding,
-                top_k=top_k * 2,  # Get more results for better filtering
-                include_metadata=True,
-                filter={
-                    "text": {"$in": [query_text.lower()]}  # Try to match query terms
-                }
+                top_k=top_k * 3,  # Get more results for better filtering
+                include_metadata=True
             )
             
-            # If no results with filter, try without filter
-            if not results.matches:
-                results = index.query(
-                    vector=query_embedding,
-                    top_k=top_k * 2,
-                    include_metadata=True
+            # For comparison queries, prioritize documents with multiple schemes
+            if is_comparison:
+                # Sort matches to prioritize documents that mention multiple schemes
+                results.matches.sort(
+                    key=lambda x: sum(1 for term in specific_terms if term in x.metadata.get('text', '').lower()),
+                    reverse=True
                 )
         else:
             # Regular query for general questions
@@ -144,12 +149,12 @@ def query_pinecone(query_text, top_k=5):
                 include_metadata=True
             )
         
-        # Filter out low-scoring results
-        min_score = 0.6  # Adjust this threshold as needed
+        # Filter out low-scoring results, but be more lenient for comparisons
+        min_score = 0.5 if is_comparison else 0.6
         filtered_matches = [match for match in results.matches if match.score >= min_score]
         
         # If we have filtered too many results, take the top ones
-        return filtered_matches[:top_k]
+        return filtered_matches[:top_k * 2]  # Return more results for better context
         
     except Exception as e:
         print(f"Error querying Pinecone: {e}")
