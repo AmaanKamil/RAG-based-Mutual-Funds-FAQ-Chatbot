@@ -117,13 +117,13 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
         # Score relevance based on query type
         # In rag_query.py, update the relevance scoring section
         if is_exit_load and ('exit load' in chunk_text or 'exitload' in chunk_text.replace(' ', '')):
-            relevance_score += 3  # Increased weight for exit load
+            relevance_score += 5  # Increased weight for exit load
             is_relevant = True
         if is_expense_ratio and ('expense ratio' in chunk_text or 'ter' in chunk_text):
-            relevance_score += 3  # Increased weight for expense ratio
+            relevance_score += 5  # Increased weight for expense ratio
             is_relevant = True
         if is_sip and ('sip' in chunk_text or 'systematic investment plan' in chunk_text or 'minimum investment' in chunk_text):
-            relevance_score += 3  # Increased weight for SIP
+            relevance_score += 5  # Increased weight for SIP
             is_relevant = True
         if is_nav and ('nav' in chunk_text or 'net asset value' in chunk_text):
             relevance_score += 2
@@ -149,7 +149,7 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
     # In rag_query.py, update the context building part
     # Get more chunks for multi-faceted queries
     is_multi_faceted = (is_exit_load + is_expense_ratio + is_sip + is_nav + is_aum) > 1
-    max_chunks = 8 if is_multi_faceted else 5
+    max_chunks = 10 if is_multi_faceted else 5
     top_chunks = retrieved_chunks[:max_chunks]
 
     # Build context from top chunks, removing duplicates
@@ -249,12 +249,26 @@ def get_facts_only_response(query, retrieved_chunks, model=model):
 
 Question: {query}
 
-Please provide a complete response addressing all parts of the question. For each piece of information requested:
-1. State the specific value
-2. Include the unit (%, INR, etc.) where applicable
-3. If any information is not available in the context, clearly state what's missing
+Please provide a complete response addressing all requested metrics. For each metric:
 
-Format your response clearly with separate sections for each piece of information."""
+1. Exit Load (if requested):
+   - State the exit load percentage
+   - Mention any holding period requirements
+   - Example: "Exit Load: 1% if redeemed within 1 year"
+
+2. Expense Ratio (if requested):
+   - State the exact percentage
+   - Mention if it's for direct or regular plan if specified
+   - Example: "Expense Ratio: 0.50% (Direct Plan)"
+
+3. Minimum SIP Amount (if requested):
+   - State the minimum amount
+   - Mention any frequency options if available
+   - Example: "Minimum SIP: ₹500 per month"
+
+If any information is not available in the context, clearly state which specific metric is missing.
+
+Format your response with clear section headers for each metric."""
     else:
         user_prompt = f"""Context from source documents:
 {context}
@@ -272,7 +286,7 @@ Provide a factual answer based ONLY on the context above. If the context doesn't
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.1,
-            max_tokens=300 if is_comparison else 150  # Allow more tokens for comparison responses
+            max_tokens=500 if is_comparison else 250  # Allow more tokens for comparison responses
         )
         
         # Check if we got a valid response
