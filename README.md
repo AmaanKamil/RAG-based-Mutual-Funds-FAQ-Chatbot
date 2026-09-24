@@ -25,8 +25,8 @@ A RAG-based chatbot that answers factual questions about mutual fund schemes usi
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- Google Gemini API key
+- Python 3.10 or higher
+- OpenAI API key
 - Pinecone API key
 
 ### Installation
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 3. Create a `.env` file in the project root with your API keys:
 ```
-GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
 PINECONE_API_KEY=your_pinecone_api_key_here
 ```
 
@@ -58,7 +58,7 @@ python build_index.py
 This will:
 - Extract text from all URLs in `groww.csv`
 - Chunk the documents
-- Generate embeddings using Google Gemini
+- Generate embeddings using OpenAI
 - Store vectors in Pinecone
 
 6. Run the Streamlit app:
@@ -110,7 +110,7 @@ The app will open in your browser at `http://localhost:8501`
 
 3. **Text extraction:** The quality of extracted text depends on the HTML structure of source pages. Some pages may require manual selector adjustments in `extractor.py`
 
-4. **Embedding costs:** Generating embeddings for large corpora incurs Google Gemini API costs
+4. **Embedding costs:** Generating embeddings for large corpora incurs OpenAI API costs
 
 5. **Pinecone storage:** Free tier has limits on vector storage. For larger corpora, consider Pinecone paid plans
 
@@ -118,11 +118,18 @@ The app will open in your browser at `http://localhost:8501`
 
 ## Technical Details
 
-- **Embedding Model:** Google Gemini `models/embedding-001` (768 dimensions)
-- **LLM Model:** Google Gemini `gemini-pro` for response generation
-- **Vector Database:** Pinecone (serverless, AWS us-east-1)
-- **Chunking:** Paragraph-based with max length of 500 characters
-- **Retrieval:** Top 3 most similar chunks per query
+- **Embedding Model:** OpenAI `text-embedding-3-small` (1536 dimensions)
+- **LLM Model:** OpenAI `gpt-4o-mini` (override with the `CHAT_MODEL` secret)
+- **Vector Database:** Pinecone index `mf-facts` (serverless, AWS us-east-1)
+- **Chunking:** Paragraph-based, max ~800 characters, duplicate chunks removed, each chunk prefixed with its source scheme
+- **Retrieval:** Wide similarity search, de-duplicated and re-ranked; multi-scheme / multi-part questions are searched per scheme and per facet so every part is covered
+- **Secrets:** read from `.env` locally or Streamlit secrets in the cloud (`config.py`)
+
+## Keeping the Streamlit app awake
+
+Streamlit Community Cloud sleeps apps after ~12 hours without visitors. `.github/workflows/keep-alive.yml`
+opens the app in a headless browser every 6 hours (and clicks the wake-up button if needed).
+Set the repository variable `STREAMLIT_APP_URL` (Settings → Secrets and variables → Actions → Variables) to enable it.
 
 ## Disclaimer
 

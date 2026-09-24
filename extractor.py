@@ -1,14 +1,9 @@
-import os
+import re
 import sys
-import time
 import json
 from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 
 def get_absolute_path(relative_path):
     """Convert relative path to absolute path based on the script's location."""
@@ -19,70 +14,60 @@ def get_absolute_path(relative_path):
         base_path = Path(__file__).parent
     return (base_path / relative_path).resolve()
 
+def _clean_soup(soup):
+    """Remove navigation, scripts and other boilerplate that pollutes the corpus."""
+    for tag in soup(['script', 'style', 'noscript', 'svg', 'header', 'nav', 'footer', 'form', 'iframe']):
+        tag.decompose()
+    return soup
+
+
+def _extract_exit_load_snippets(soup):
+    """
+    Find the smallest elements that mention exit load and return their text.
+    Walks up a couple of levels so the value next to the label is included,
+    but stops before grabbing a whole page section.
+    """
+    snippets = []
+    for string in soup.find_all(string=re.compile(r'exit\s*load', re.I)):
+        element = string.parent
+        for _ in range(3):
+            if element.parent is None or len(element.parent.get_text(' ', strip=True)) > 600:
+                break
+            element = element.parent
+        text = element.get_text(' ', strip=True)
+        if text and text not in snippets and len(text) <= 600:
+            snippets.append(text)
+    return snippets
+
+
 def extract_text_from_url(url):
     """
-    Extract text content from a URL, with special handling for dynamic Groww pages.
-    Special handling for exit load information extraction.
+    Extract readable text content from a URL.
+    Exit load information is pulled out into a labelled section at the top
+    (chunk.py keeps that section as its own chunk).
     """
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
     }
 
     try:
-        # First, try fetching with requests for static content
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-
-        # First, try to extract exit load information specifically
-        exit_load_info = []
-        
-        # Common patterns for exit load information
-        exit_load_selectors = [
-            "div[data-testid*='exitLoad']",
-            "div:contains('Exit Load')",
-            "table:contains('Exit Load')",
-            "p:contains('exit load')",
-            "div:contains('exit load')",
-            "div.fund-attributes",
-            "div.fund-details",
-            "div.key-information"
-        ]
-        
-        for selector in exit_load_selectors:
-            try:
-                elements = soup.select(selector)
-                for element in elements:
-                    text = element.get_text(' ', strip=True)
-                    if 'exit load' in text.lower() or 'exitload' in text.lower().replace(' ', ''):
-                        if element.name == 'table':
-                            # Format table data
-                            rows = element.find_all('tr')
-                            table_data = []
-                            for row in rows:
-                                cols = row.find_all('td')
-                                if cols:
-                                    table_data.append(' | '.join(col.get_text(strip=True) for col in cols))
-                            if table_data:
-                                exit_load_info.append("Exit Load Details:\n" + "\n".join(table_data))
-                        else:
-                            exit_load_info.append(text)
-            except Exception as e:
-                continue
-        
-        # If we found exit load info, prepend it to the main content
-        if exit_load_info:
-            exit_load_text = "\n\n".join(exit_load_info)
-            main_content = soup.get_text(' ', strip=True)
-            return f"{exit_load_text}\n\n{main_content}"
-        
-        # If no exit load info found, proceed with normal extraction
-        main_content = soup.get_text(' ', strip=True)
-        return main_content
-
     except requests.RequestException as e:
         print(f"Error fetching {url}: {e}")
         return None
+
+    soup = _clean_soup(BeautifulSoup(response.text, 'html.parser'))
+    main = soup.find('main') or soup.body or soup
+
+    exit_load_info = _extract_exit_load_snippets(main)
+    # Keep block structure so chunk.py can split on paragraphs
+    main_content = re.sub(r'\n\s*\n+', '\n\n', main.get_text('\n', strip=True).replace('\n', '\n\n'))
+
+    if exit_load_info:
+        return "EXIT LOAD INFORMATION: " + " | ".join(exit_load_info) + "\n\n" + main_content
+    return main_content
+
 
 def extract_corpus_from_file(csv_file=None):
     """

@@ -13,7 +13,7 @@ import time
 try:
     from extractor import extract_corpus_from_file, generate_json_output
     from chunk import create_documents_from_corpus
-    from main import get_embedding, upsert_vectors
+    from main import get_embedding, upsert_vectors, ensure_index, get_index
 except ImportError as e:
     print(f"Error importing required modules: {e}")
     print("Please make sure all dependencies are installed: pip install -r requirements.txt")
@@ -89,6 +89,15 @@ def build_index(csv_file='groww.csv'):
     # Add text to metadata for retrieval
     for doc in documents_with_embeddings:
         doc['metadata']['text'] = doc['text'][:5000]  # Store first 5000 chars in metadata
+    if not documents_with_embeddings:
+        print("Error: no embeddings generated, leaving the existing index untouched.")
+        return
+    ensure_index()
+    # Clear old vectors so chunks from a previous (larger) build don't linger
+    try:
+        get_index().delete(delete_all=True)
+    except Exception as e:
+        print(f"  (could not clear old vectors: {e})")
     upsert_vectors(documents_with_embeddings)
     print(f"✓ Uploaded {len(documents_with_embeddings)} vectors to Pinecone")
     
@@ -98,6 +107,7 @@ def build_index(csv_file='groww.csv'):
     print(f"Total documents: {len(corpus)}")
     print(f"Total chunks: {len(documents_with_embeddings)}")
     print(f"Index name: mf-facts")
+    print("Remember to update KB_LAST_UPDATED (config.py or Streamlit secrets) to today's date.")
     print("=" * 60)
 
 if __name__ == "__main__":

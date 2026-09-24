@@ -36,12 +36,12 @@ This will install:
 
 2. Edit `.env` and add your actual API keys:
    ```
-   GEMINI_API_KEY=your-actual-gemini-key
+   OPENAI_API_KEY=your-actual-openai-key
    PINECONE_API_KEY=your-actual-pinecone-key
    ```
 
    **Where to get API keys:**
-   - Google Gemini: https://aistudio.google.com/app/apikey
+   - OpenAI: https://platform.openai.com/api-keys
    - Pinecone: https://app.pinecone.io/ (sign up for free tier)
 
 ## Step 3: Build the Index

@@ -105,6 +105,18 @@ def chunk_text(text, max_length=800):
     
     return final_chunks
 
+def source_title(url):
+    """
+    Human-readable title for a source URL, e.g. 'Groww Value Fund Direct Growth'.
+    """
+    if 'groww.in/mutual-funds/' in url:
+        slug = url.rstrip('/').rsplit('/', 1)[-1]
+        return slug.replace('-', ' ').title()
+    if 'sebi.gov.in' in url:
+        return 'SEBI fund registration details'
+    return url
+
+
 def create_documents_from_corpus(corpus):
     """
     Create document chunks from corpus.
@@ -112,6 +124,7 @@ def create_documents_from_corpus(corpus):
     Returns: list of dicts with 'id', 'text', and 'metadata' keys
     """
     documents = []
+    seen_texts = set()
     for item in corpus:
         url = item.get('url', '')
         text = item.get('text', '')
@@ -119,7 +132,14 @@ def create_documents_from_corpus(corpus):
             continue
             
         chunks = chunk_text(text)
+        title = source_title(url)
         for idx, chunk in enumerate(chunks):
+            # Prefix the source so chunks without the scheme name still embed/retrieve correctly
+            chunk = f"Source: {title}\n{chunk}"
+            # Scraped pages repeat blocks many times; storing duplicates crowds out other content
+            if chunk in seen_texts:
+                continue
+            seen_texts.add(chunk)
             # Create a safe ID from URL
             url_safe = url.replace('https://', '').replace('http://', '').replace('/', '_').replace('?', '_').replace('=', '_')
             doc_id = f"{url_safe}_chunk{idx}"
